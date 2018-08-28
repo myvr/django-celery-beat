@@ -12,7 +12,7 @@ from celery import schedules
 from celery.five import python_2_unicode_compatible
 
 from . import managers
-from .utils import now, make_aware
+from .utils import now, maybe_make_unaware
 
 DAYS = 'days'
 HOURS = 'hours'
@@ -62,8 +62,7 @@ class SolarSchedule(models.Model):
     def schedule(self):
         return schedules.solar(self.event,
                                self.latitude,
-                               self.longitude,
-                               nowfun=lambda: make_aware(now()))
+                               self.longitude)
 
     @classmethod
     def from_schedule(cls, schedule):
@@ -113,9 +112,7 @@ class IntervalSchedule(models.Model):
     @property
     def schedule(self):
         return schedules.schedule(
-            timedelta(**{self.period: self.every}),
-            nowfun=lambda: make_aware(now())
-        )
+            timedelta(**{self.period: self.every}))
 
     @classmethod
     def from_schedule(cls, schedule, period=SECONDS):
@@ -184,8 +181,7 @@ class CrontabSchedule(models.Model):
                                  hour=self.hour,
                                  day_of_week=self.day_of_week,
                                  day_of_month=self.day_of_month,
-                                 month_of_year=self.month_of_year,
-                                 nowfun=lambda: make_aware(now()))
+                                 month_of_year=self.month_of_year)
 
     @classmethod
     def from_schedule(cls, schedule):
@@ -311,6 +307,8 @@ class PeriodicTask(models.Model):
         self.exchange = self.exchange or None
         self.routing_key = self.routing_key or None
         self.queue = self.queue or None
+        if self.last_run_at:
+            self.last_run_at = maybe_make_unaware(self.last_run_at)
         if not self.enabled:
             self.last_run_at = None
         super(PeriodicTask, self).save(*args, **kwargs)
