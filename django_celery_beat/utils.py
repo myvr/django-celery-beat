@@ -21,6 +21,21 @@ def make_aware(value):
         # then convert to the Django configured timezone.
         default_tz = timezone.get_default_timezone()
         value = timezone.localtime(value, default_tz)
+    else:
+        # naive datetimes should be in Django's timezone.
+        if timezone.is_naive(value):
+            default_tz = timezone.get_default_timezone()
+            value = timezone.make_aware(value, default_tz)
+    return value
+
+
+def maybe_make_unaware(value):
+    """Remove tz if not configured."""
+    if not getattr(settings, 'USE_TZ', False) and timezone.is_aware(value):
+        # Convert to Django's configured timezone and then remove the timezone.
+        default_tz = timezone.get_default_timezone()
+        value = timezone.localtime(value, default_tz)
+        value = value.replace(tzinfo=None)
     return value
 
 
