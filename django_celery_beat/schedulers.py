@@ -23,6 +23,7 @@ from .models import (
     SolarSchedule,
 )
 from .utils import make_aware
+from .utils import now
 
 try:
     from celery.utils.time import is_naive
@@ -99,11 +100,7 @@ class ModelEntry(ScheduleEntry):
         return self.schedule.is_due(self.last_run_at)
 
     def _default_now(self):
-        now = self.app.now()
-        # The PyTZ datetime must be localised for the Django-Celery-Beat
-        # scheduler to work. Keep in mind that timezone arithmatic
-        # with a localized timezone may be inaccurate.
-        return now.tzinfo.localize(now.replace(tzinfo=None))
+        return now()
 
     def __next__(self):
         self.model.last_run_at = self.app.now()

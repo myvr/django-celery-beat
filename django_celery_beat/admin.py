@@ -116,8 +116,10 @@ class PeriodicTaskAdmin(admin.ModelAdmin):
     form = PeriodicTaskForm
     model = PeriodicTask
     celery_app = current_app
-    list_display = ('__str__', 'enabled')
+    list_display = ('__str__', 'last_run_at', 'total_run_count',
+        'date_changed', 'enabled')
     actions = ('enable_tasks', 'disable_tasks', 'run_tasks')
+    readonly_fields=('last_run_at', 'total_run_count', 'date_changed')
     fieldsets = (
         (None, {
             'fields': ('name', 'regtask', 'task', 'enabled'),
@@ -125,6 +127,10 @@ class PeriodicTaskAdmin(admin.ModelAdmin):
         }),
         ('Schedule', {
             'fields': ('interval', 'crontab', 'solar'),
+            'classes': ('extrapretty', 'wide', ),
+        }),
+        ('Debug', {
+            'fields': ('last_run_at', 'total_run_count', 'date_changed'),
             'classes': ('extrapretty', 'wide', ),
         }),
         ('Arguments', {

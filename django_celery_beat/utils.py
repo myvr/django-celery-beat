@@ -3,6 +3,8 @@
 # -- a recursive loader import!
 from __future__ import absolute_import, unicode_literals
 
+import datetime
+
 from django.conf import settings
 from django.utils import timezone
 
@@ -22,19 +24,20 @@ def make_aware(value):
         default_tz = timezone.get_default_timezone()
         value = timezone.localtime(value, default_tz)
     else:
-        # naive datetimes should be in Django's timezone.
+        # naive datetimes are assumed to be in UTC.
         if timezone.is_naive(value):
-            default_tz = timezone.get_default_timezone()
-            value = timezone.make_aware(value, default_tz)
+            value = timezone.make_aware(value, timezone.utc)
+        else:
+            # Convert aware datetime to UTC.
+            value = timezone.localtime(value, timezone.utc)
     return value
 
 
 def maybe_make_unaware(value):
     """Remove tz if not configured."""
     if not getattr(settings, 'USE_TZ', False) and timezone.is_aware(value):
-        # Convert to Django's configured timezone and then remove the timezone.
-        default_tz = timezone.get_default_timezone()
-        value = timezone.localtime(value, default_tz)
+        # Convert to UTC and then remove the timezone.
+        value = timezone.localtime(value, timezone.utc)
         value = value.replace(tzinfo=None)
     return value
 
@@ -44,7 +47,8 @@ def now():
     if getattr(settings, 'USE_TZ', False):
         return now_localtime(timezone.now())
     else:
-        return timezone.now()
+        # Return UTC Time.
+        return datetime.datetime.utcnow().replace(tzinfo=timezone.utc)
 
 
 def is_database_scheduler(scheduler):
