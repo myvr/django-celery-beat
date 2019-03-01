@@ -12,7 +12,7 @@ from celery import schedules
 from celery.five import python_2_unicode_compatible
 
 from . import managers
-from .utils import now, maybe_make_unaware
+from .utils import now, maybe_make_unaware, make_aware
 
 DAYS = 'days'
 HOURS = 'hours'
@@ -62,7 +62,8 @@ class SolarSchedule(models.Model):
     def schedule(self):
         return schedules.solar(self.event,
                                self.latitude,
-                               self.longitude)
+                               self.longitude,
+                               nowfun=lambda: make_aware(now()))
 
     @classmethod
     def from_schedule(cls, schedule):
@@ -112,7 +113,8 @@ class IntervalSchedule(models.Model):
     @property
     def schedule(self):
         return schedules.schedule(
-            timedelta(**{self.period: self.every}))
+            timedelta(**{self.period: self.every}),
+            nowfun=lambda: make_aware(now()))
 
     @classmethod
     def from_schedule(cls, schedule, period=SECONDS):
@@ -181,7 +183,8 @@ class CrontabSchedule(models.Model):
                                  hour=self.hour,
                                  day_of_week=self.day_of_week,
                                  day_of_month=self.day_of_month,
-                                 month_of_year=self.month_of_year)
+                                 month_of_year=self.month_of_year,
+                                 nowfun=lambda: make_aware(now()))
 
     @classmethod
     def from_schedule(cls, schedule):
@@ -214,7 +217,7 @@ class PeriodicTasks(models.Model):
 
     @classmethod
     def update_changed(cls, **kwargs):
-        cls.objects.update_or_create(ident=1, defaults={'last_update': now()})
+        cls.objects.update_or_create(ident=1, defaults={'last_update': maybe_make_unaware(now())})
 
     @classmethod
     def last_change(cls):
